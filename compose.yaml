@@ -1,54 +1,53 @@
 services:
-    laravel.test:
+    booking-api:
         build:
-            context: './vendor/laravel/sail/runtimes/8.5'
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.5/app'
-        user: "${UID}:${GID}"
+            context: .
+            dockerfile: ./docker/php/Dockerfile
         extra_hosts:
             - 'host.docker.internal:host-gateway'
-        ports:
-            - '${APP_PORT:-80}:80'
-            - '${VITE_PORT:-5173}:${VITE_PORT:-5173}'
         environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            LARAVEL_SAIL: 0
         volumes:
             - '.:/var/www/html'
+        working_dir: /var/www/html
+        # Komenda startowa nie musi już instalować Composera - obraz ma go już w sobie!
         networks:
             - sail
         depends_on:
-            - pgsql
+            pgsql:
+                condition: service_healthy
+
+    nginx:
+        image: 'nginx:alpine'
+        ports:
+            - '${APP_PORT:-80}:80'
+        volumes:
+            - '.:/var/www/html'
+            - './docker/php/nginx.conf:/etc/nginx/conf.d/default.conf'
+        networks:
+            - sail
+        depends_on:
+            - booking-api
+
     pgsql:
-        image: 'postgres:18-alpine'
+        image: 'postgres:15-alpine'
         ports:
             - '${FORWARD_DB_PORT:-5432}:5432'
         environment:
             PGPASSWORD: '${DB_PASSWORD:-secret}'
-            POSTGRES_DB: '${DB_DATABASE}'
-            POSTGRES_USER: '${DB_USERNAME}'
+            POSTGRES_DB: '${DB_DATABASE:-laravel}'
+            POSTGRES_USER: '${DB_USERNAME:-sail}'
             POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
         volumes:
-            - 'sail-pgsql:/var/lib/postgresql'
-            - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+            - 'sail-pgsql:/var/lib/postgresql/data'
         networks:
             - sail
+        # Uproszczony i stabilny healthcheck za pomocą wbudowanego użytkownika postgres
         healthcheck:
-            test:
-                - CMD
-                - pg_isready
-                - '-q'
-                - '-d'
-                - '${DB_DATABASE}'
-                - '-U'
-                - '${DB_USERNAME}'
-            retries: 3
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 5s
             timeout: 5s
+            retries: 5
 
     pgadmin:
         image: dpage/pgadmin4:latest
@@ -61,9 +60,11 @@ services:
             - sail
         depends_on:
             - pgsql
+
 networks:
     sail:
         driver: bridge
+
 volumes:
     sail-pgsql:
         driver: local
