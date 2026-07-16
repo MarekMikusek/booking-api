@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\CreateHolidayAction;
+use App\DTOs\HolidayDTO;
+use App\Http\Requests\StoreHolidayRequest;
 use App\Models\Holiday;
 use Illuminate\Http\Request;
 
@@ -26,9 +29,16 @@ class HolidayController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreHolidayRequest $request, CreateHolidayAction $createHolidayAction)
     {
-        //
+        $data = HolidayDTO::fromRequest($request);
+
+        $holiday = $createHolidayAction->execute($data);
+
+        return response()->json([
+            'message' => 'Dzień wolny został pomyślnie dodany.',
+            'data' => $holiday
+        ], 201);
     }
 
     /**

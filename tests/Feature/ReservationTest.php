@@ -4,15 +4,20 @@ use App\Enums\ReservationStatus;
 use App\Models\Holiday;
 use App\Models\Location;
 use App\Models\Reservation;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
-use Tests\TestCase;
 
-uses(TestCase::class);
+$location = null;
 
-it('pobiera prawidłową listę wolnych slotów w zwykły dzień roboczy', function () {
-    /** @var \Tests\TestCase $this */
-    $response = $this->getJson('/api/slots?date=2026-07-20');
+beforeEach(function () use (&$location) {
+    // Tworzymy lokalizację przed każdym testem
+    $location = Location::create([
+        'name' => 'Sala Testowa',
+    ]);
+});
+
+it('pobiera prawidłową listę wolnych slotów w zwykły dzień roboczy', function () use (&$location) {
+    // Używamy stworzonej lokalizacji
+    $response = $this->getJson("/api/slots?date=2026-07-20&location_id={$location->id}");
 
     $response->assertStatus(200)
         ->assertJsonFragment([
@@ -24,9 +29,9 @@ it('pobiera prawidłową listę wolnych slotów w zwykły dzień roboczy', funct
         ]);
 });
 
-it('nie zwraca wolnych slotów w święto państwowe Spatie', function () {
+it('nie zwraca wolnych slotów w święto państwowe Spatie', function () use (&$location) {
     /** @var \Tests\TestCase $this */
-    $response = $this->getJson('/api/slots?date=2026-11-11');
+    $response = $this->getJson("/api/slots?date=2026-11-11&location_id={$location->id}");
 
     $response->assertStatus(200)
         ->assertJsonFragment([
@@ -34,7 +39,7 @@ it('nie zwraca wolnych slotów w święto państwowe Spatie', function () {
         ]);
 });
 
-it('nie zwraca wolnych slotów w niestandardowe święto zapisane w bazie danych', function () {
+it('nie zwraca wolnych slotów w niestandardowe święto zapisane w bazie danych', function () use (&$location) {
     /** @var \Tests\TestCase $this */
 
     Holiday::create([
@@ -42,7 +47,7 @@ it('nie zwraca wolnych slotów w niestandardowe święto zapisane w bazie danych
         'name' => 'Urlop załogi'
     ]);
 
-    $response = $this->getJson('/api/slots?date=2026-07-22');
+    $response = $this->getJson("/api/slots?date=2026-07-22&location_id={$location->id}");
 
     $response->assertStatus(200)
         ->assertJsonFragment([
@@ -50,11 +55,11 @@ it('nie zwraca wolnych slotów w niestandardowe święto zapisane w bazie danych
         ]);
 });
 
-it('pozwala na utworzenie poprawnej rezerwacji i automatycznie generuje token UUID', function () {
+it('pozwala na utworzenie poprawnej rezerwacji i automatycznie generuje token UUID', function () use (&$location) {
     /** @var \Tests\TestCase $this */
 
     $payload = [
-        'location_id' => 1,
+        'location_id' => $location->id,
         'starts_at' => '2026-07-20 09:30:00',
         'customer_name' => 'Jan Kowalski',
         'customer_email' => 'jan@kowalski.pl',
@@ -78,10 +83,10 @@ it('pozwala na utworzenie poprawnej rezerwacji i automatycznie generuje token UU
     expect(Str::isUuid($response->json('data.token')))->toBeTrue();
 });
 
-it('nie pozwala na rezerwację tego samego slotu dwukrotnie', function () {
+it('nie pozwala na rezerwację tego samego slotu dwukrotnie', function ()  use (&$location) {
     /** @var \Tests\TestCase $this */
     Reservation::create([
-        'location_id' => 1,
+        'location_id' => $location->id,
         'customer_name' => 'Klient 1',
         'customer_email' => 'klient1@test.pl',
         'starts_at' => '2026-07-20 09:30:00',
@@ -90,7 +95,7 @@ it('nie pozwala na rezerwację tego samego slotu dwukrotnie', function () {
     ]);
 
     $payload = [
-        'location_id' => 1,
+        'location_id' => $location->id,
         'starts_at' => '2026-07-20 09:30:00',
         'customer_name' => 'Klient 2',
         'customer_email' => 'klient2@test.pl',
@@ -102,11 +107,7 @@ it('nie pozwala na rezerwację tego samego slotu dwukrotnie', function () {
         ->assertJsonValidationErrors(['starts_at']);
 });
 
-it('pozwala na utworzenie rezerwacji w terminie, w którym inna rezerwacja została wcześniej anulowana', function () {
-    $location = Location::create([
-        'name' => 'Sala Testowa',
-    ]);
-
+it('pozwala na utworzenie rezerwacji w terminie, w którym inna rezerwacja została wcześniej anulowana', function ()  use (&$location) {
     $cancelledReservation = Reservation::create([
         'location_id' => $location->id,
         'customer_name' => 'Jan Kowalski',
