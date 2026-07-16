@@ -9,6 +9,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $token
+ * @property \Carbon\Carbon $starts_at
+ * @property \Carbon\Carbon $ends_at
+ * @property string $customer_name
+ * @property string $customer_email
+ * @property \App\Enums\ReservationStatus $status
+ */
 class Reservation extends Model
 {
     use HasFactory;

@@ -24,7 +24,7 @@ class CreateReservationAction
             $locationId = (int) $data->locationId;
             $date       = $startsAt->copy()->startOfDay();
 
-            $availableSlots = $this->reservationQuery->getAvailableSlots($date, $locationId, lock: true);
+            $availableSlots = $this->reservationQuery->getAvailableSlots(date: $date, locationId:$locationId, lock: true);
 
             $requestedSlotTime = $startsAt->format('H:i');
 

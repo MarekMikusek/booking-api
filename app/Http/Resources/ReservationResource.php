@@ -5,6 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/** @mixin \App\Models\Reservation */
 class ReservationResource extends JsonResource
 {
     /**
@@ -15,8 +16,8 @@ class ReservationResource extends JsonResource
         return [
             'id' => $this->id,
             'token' => $this->token,
-            'starts_at' => $this->starts_at?->toIso8601String(),
-            'ends_at' => $this->ends_at?->toIso8601String(),
+            'starts_at' => $this->starts_at->toIso8601String(),
+            'ends_at' => $this->ends_at->toIso8601String(),
             'customer_name' => $this->customer_name,
             'customer_email' => $this->customer_email,
             'status' => $this->status,

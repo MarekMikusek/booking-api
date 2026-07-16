@@ -7,17 +7,12 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
 
-uses(RefreshDatabase::class)
-    ->beforeEach(function () {
-        $this->location = Location::create([
-            'name' => 'Salon Główny',
-        ]);
-    });
-
 it('anuluje rezerwację, jeśli podano poprawny token z dużym wyprzedzeniem', function () {
-    // Tworzymy rezerwację na jutro (czyli > 2h wolnego czasu)
+    /** @var \Tests\TestCase $this */
+
+    $location = Location::create(['name' => 'Salon Główny']);
     $reservation = Reservation::create([
-        'location_id' => $this->location->id,
+        'location_id' => $location->id,
         'customer_name' => 'Anna Nowak',
         'customer_email' => 'anna@nowak.pl',
         'starts_at' => Carbon::now()->addDay()->setHour(12)->setMinute(0),
@@ -32,13 +27,15 @@ it('anuluje rezerwację, jeśli podano poprawny token z dużym wyprzedzeniem', f
     $response->assertStatus(200)
         ->assertJsonFragment(['message' => 'Rezerwacja została pomyślnie anulowana.']);
 
-    // Sprawdzamy czy w bazie status zmienił się na CANCELLED
     expect($reservation->fresh()->status)->toBe(ReservationStatus::CANCELLED);
 });
 
 it('blokuje próbę anulowania przy użyciu nieprawidłowego tokenu', function () {
+    /** @var \Tests\TestCase $this */
+
+    $location = Location::create(['name' => 'Salon Główny']);
     $reservation = Reservation::create([
-        'location_id' => $this->location->id,
+        'location_id' => $location->id,
         'customer_name' => 'Anna Nowak',
         'customer_email' => 'anna@nowak.pl',
         'starts_at' => Carbon::now()->addDay(),
@@ -55,9 +52,11 @@ it('blokuje próbę anulowania przy użyciu nieprawidłowego tokenu', function (
 });
 
 it('nie pozwala na anulowanie rezerwacji po jej rozpoczęciu', function () {
-    // Rezerwacja za 1 godzinę od teraz
+    /** @var \Tests\TestCase $this */
+    $location = Location::create(['name' => 'Salon Główny']);
+
     $reservation = Reservation::create([
-        'location_id' => $this->location->id,
+        'location_id' => $location->id,
         'customer_name' => 'Spóźnialski Jan',
         'customer_email' => 'jan@test.pl',
         'starts_at' => Carbon::now()->addHour(),

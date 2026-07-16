@@ -6,6 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $weekday_start
+ * @property string $weekday_end
+ * @property string $saturday_start
+ * @property string $saturday_end
+ */
 class Location extends Model
 {
     protected $fillable = [
