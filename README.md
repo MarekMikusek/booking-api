@@ -1,3 +1,13 @@
+##Założenia
+1. Nie implementuję logiki związanej z autoryzacją, uprawnieniami itp.
+2. Zakładam, że wypełnienie rezerwacji będzie nieduże, dla zmniejszenia ilości danych rekordy w tabeli reservations są tworzone gdy jest taka potrzeba. Zmniejszy to ilość danych i ułatwi prowadzenie logiki biznesowej.
+3. Zachowanie kolumny ends_at: Mimo stałej długości slotu, zdecydowałem się na przechowywanie ends_at w bazie danych. Zapobiega to zaburzeniu danych historycznych w przypadku zmiany długości slotu w konfiguracji w przyszłości (stare rezerwacje muszą zachować swój pierwotny, 30-minutowy czas trwania) oraz przygotowuje system pod obsługę rezerwacji o zmiennej długości.
+4. W przyszłości system będzie używany dla innych lokalizacji. Lokalizacje są umieszczone w bazie danych, dla każdej można ustalić osobne godziny pracy i dlugość trwania slotu. Wartości domyślne ustawione zgodnie z danymi w zadaniu.
+5. Zabezpieczenie przed masowym usuwaniem rezerwacji gości za pomocą unikalnych tokenów UUID, zapobiega to nieautoryzowanym działaniom.
+6. 
+
+
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
