@@ -10,16 +10,11 @@ class ReservationRepository
 {
 public function getActiveReservationsForDate(Carbon $date, Location $location, bool $lock = false): array
     {
-        $query = Reservation::query()
+        return Reservation::query()
             ->where('location_id', $location->id)
             ->active()
-            ->whereBetween('starts_at', [$date->copy()->startOfDay(), $date->copy()->endOfDay()]);
-
-        if ($lock) {
-            $query->lockForUpdate();
-        }
-
-        return $query->pluck('starts_at')
+            ->whereBetween('starts_at', [$date->copy()->startOfDay(), $date->copy()->endOfDay()])
+            ->pluck('starts_at')
             ->map(fn($dt) => $dt->format('H:i'))
             ->toArray();
     }

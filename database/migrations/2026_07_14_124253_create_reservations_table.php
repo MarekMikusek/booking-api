@@ -22,11 +22,8 @@ return new class extends Migration
             $table->enum('status', ['active', 'cancelled'])->default('active');
             $table->uuid('token')->unique();
             $table->timestamps();
-
-            $table->unique(['location_id', 'starts_at', 'status']);
-
-            $table->index(['location_id', 'status', 'starts_at']);
         });
+        DB::statement("CREATE UNIQUE INDEX reservations_active_unique ON reservations (location_id, starts_at) WHERE status = 'active'");
     }
 
     /**
@@ -34,6 +31,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::statement("DROP INDEX IF EXISTS reservations_active_unique");
         Schema::dropIfExists('reservations');
     }
 };

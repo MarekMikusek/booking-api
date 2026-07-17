@@ -12,7 +12,7 @@ class ReservationQuery
 {
     public function __construct(private readonly ReservationRepository $reservationRepository) {}
 
-    public function getAvailableSlots(Carbon $date, int $locationId, bool $lock = false): array
+    public function getAvailableSlots(Carbon $date, int $locationId): array
     {
         if (Holiday::isHoliday($date)) {
             return [];
@@ -22,7 +22,7 @@ class ReservationQuery
         $businessHours = new BusinessHours($date, $location);
         $allPossibleSlots = $businessHours->getPossibleSlots();
 
-        $bookedSlots = $this->reservationRepository->getActiveReservationsForDate($date, $location, $lock);
+        $bookedSlots = $this->reservationRepository->getActiveReservationsForDate($date, $location);
 
         return array_values(array_diff($allPossibleSlots, $bookedSlots));
     }

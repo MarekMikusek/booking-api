@@ -7,11 +7,14 @@ use App\Models\Reservation;
 use App\Queries\ReservationQuery;
 use App\Repositories\ReservationRepository;
 use Carbon\Carbon;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class CreateReservationAction
 {
+    private const SQLSTATE_INTEGRITY_CONSTRAINT_VIOLATION = '23000';
+
     public function __construct(
         private readonly ReservationQuery $reservationQuery,
         private readonly ReservationRepository $reservationRepository
@@ -20,11 +23,11 @@ class CreateReservationAction
     public function execute(ReservationDTO $data): Reservation
     {
         return DB::transaction(function () use ($data) {
-            $startsAt   = Carbon::parse($data->startsAt);
+            $startsAt = Carbon::parse($data->startsAt);
             $locationId = (int) $data->locationId;
-            $date       = $startsAt->copy()->startOfDay();
+            $date = $startsAt->copy()->startOfDay();
 
-            $availableSlots = $this->reservationQuery->getAvailableSlots(date: $date, locationId:$locationId, lock: true);
+            $availableSlots = $this->reservationQuery->getAvailableSlots(date: $date, locationId: $locationId);
 
             $requestedSlotTime = $startsAt->format('H:i');
 
@@ -34,14 +37,24 @@ class CreateReservationAction
                 ]);
             }
 
-            return $this->reservationRepository->create([
-                'location_id' => $locationId,
-                'customer_name' => $data->customerName,
-                'customer_email' => $data->customerEmail,
-                'starts_at' => $startsAt,
-                'ends_at' => $startsAt->copy()->addMinutes(config('booking.slot_duration_minutes', 30)),
-                'status' => ReservationStatus::ACTIVE,
-            ]);
+            try {
+                return $this->reservationRepository->create([
+                    'location_id' => $locationId,
+                    'customer_name' => $data->customerName,
+                    'customer_email' => $data->customerEmail,
+                    'starts_at' => $startsAt,
+                    'ends_at' => $startsAt->copy()->addMinutes(config('booking.slot_duration_minutes', 30)),
+                    'status' => ReservationStatus::ACTIVE,
+                ]);
+            } catch (QueryException $e) {
+                if ($e->getCode() === self::SQLSTATE_INTEGRITY_CONSTRAINT_VIOLATION || str_contains($e->getMessage(), 'Duplicate entry')) {
+                    throw ValidationException::withMessages([
+                        'starts_at' => ['Wybrany termin został w międzyczasie zarezerwowany.'],
+                    ]);
+                }
+
+                throw $e;
+            }
         });
     }
 }

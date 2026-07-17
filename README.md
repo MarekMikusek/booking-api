@@ -7,6 +7,19 @@
 6. Wygeneruj klucz aplikacji `docker compose exec booking-api php artisan key:generate`
 7. Uruchmom tworzenie tabel w bazie danych i wstawienie danych pierwszej lokalizacji `docker compose exec booking-api php artisan migrate --seed`
 
+Przykładowe żądania:
+lista wolnych slotów GET - endpoint: `http://localhost:8078/api/slots?date=2026-07-29`
+utworzenie rezerwacji POST -endpoint: `http://localhost:8078/api/reservations`, 
+    content: `{
+    "location_id": 1,
+    "starts_at": "2026-07-28 12:00:00",
+    "customer_name": "Jan Kowalski",
+    "customer_email": "jan.kowalski@example.com"
+}`
+anulowanie rezerwacji: `http://localhost:8078/api/reservations/1?token=e06df783-976d-4975-b680-1ca35c448e18`
+
+
+
 ##Założenia
 1. Nie implementuję logiki związanej z autoryzacją, uprawnieniami itp.
 2. Zakładam, że wypełnienie rezerwacji będzie nieduże, dla zmniejszenia ilości danych rekordy w tabeli reservations są tworzone gdy jest taka potrzeba. Zmniejszy to ilość danych i ułatwi prowadzenie logiki biznesowej.
